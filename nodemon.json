@@ -1,0 +1,14 @@
+{
+  "ignore": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "node_modules",
+    "src/client"
+  ],
+  "watch": [
+    "src/server",
+    "src/shared"
+  ],
+  "exec": "export PORT=8050 && yarn server",
+  "ext": "ts"
+}
