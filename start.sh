@@ -14,5 +14,6 @@ while [ ${REMAINING_FETCHES} -gt 0 ]; do
 done
 
 git checkout origin/master
-npm install
+git show --no-patch
+npm ci
 authbind --deep npm start
