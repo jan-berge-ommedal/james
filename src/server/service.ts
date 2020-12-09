@@ -96,10 +96,10 @@ export function allOff() {
 //   allToggle();
 // });
 
-schedule('* * 8 * * *', () => {
+schedule('* * 6,15 * * *', () => {
   allOn();
 });
 
-schedule('* * 0 * * *', () => {
+schedule('* * 0,10 * * *', () => {
   allOff();
 });
