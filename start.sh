@@ -13,7 +13,8 @@ while [ ${REMAINING_FETCHES} -gt 0 ]; do
   fi
 done
 
+set -x
 git checkout origin/master
 git show --no-patch
-npm ci
-authbind --deep npm start
+yarn install
+authbind --deep yarn start --network-timeout 300000

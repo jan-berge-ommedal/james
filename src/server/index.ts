@@ -1,10 +1,15 @@
-// @ts-ignore
-import express from 'express';
+import express, { Request, Response } from 'express';
+import expressWs from 'express-ws';
 import * as bodyParser from 'body-parser';
-import logger from './middleware';
-import api from './api';
+import { newWebSocketClient } from './api';
 
-const app = express();
+function logger(request: Request, response: Response, next: Function) {
+  console.log(`${request.method} ${request.path}`);
+  next();
+}
+
+const { app } = expressWs(express());
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -16,10 +21,6 @@ app.get('/', (req, res) => {
   console.log('sending index.html');
   res.sendFile('/dist/index.html');
 });
-
-app.use('/api', api);
-
-// START THE SERVER
-// =============================================================================
+app.ws('/ws', newWebSocketClient);
 app.listen(port);
 console.log(`App listening on ${port}`);

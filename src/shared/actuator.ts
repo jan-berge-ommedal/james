@@ -6,17 +6,29 @@ export enum ActuatorAction {
     TOGGLE
 }
 
+export enum ActuatorState {
+    UNKNOWN,
+    OFF,
+    ON
+}
+
 export interface Actuator {
     id: string,
-    name: string
+    name: string,
+    state: ActuatorState
+}
+
+export interface Actuate {
+    actuatorId?: string,
+    action: ActuatorAction
 }
 
 export type ActuatorActionKey = keyof typeof ActuatorAction
 
-export function action(action: ActuatorActionKey): ActuatorAction {
+export function actuatorAction(action: ActuatorActionKey): ActuatorAction {
   return ActuatorAction[action];
 }
 
-export function key(action: ActuatorAction): ActuatorActionKey {
+export function actuatorActionKey(action: ActuatorAction): ActuatorActionKey {
     return ActuatorAction[action] as ActuatorActionKey;
 }

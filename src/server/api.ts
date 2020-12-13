@@ -1,39 +1,67 @@
-import * as express from 'express';
-import {allOff, allOn, allToggle, getActuators, toggle,} from './service';
-import {action, ActuatorAction, ActuatorActionKey} from '../shared/actuator';
+import WebSocket from 'ws';
+import {
+  allOff, allOn, allToggle, getActuators, off, on, onActuator, readAll, toggle,
+} from './service';
+import { ActuatorAction } from '../shared/actuator';
+import { onEvent, getEvents } from './events';
+import { ServerMessage } from '../shared/api';
 
-const api: express.Router = express.Router();
+const sockets : WebSocket[] = [];
 
+function send(data: ServerMessage, ws: WebSocket) {
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(data));
+  }
+}
 
-api.route('/actuators')
-    .get((req, res) => {
-        res.json(getActuators());
-    });
+function sendToAll(ev: ServerMessage) {
+  sockets.forEach((s) => {
+    send(ev, s);
+  });
+}
 
+onEvent(sendToAll);
+onActuator(sendToAll);
 
-api.route('/actuators/all/:action')
-    .put((req, res) => {
-        res.json({});
-        const actionKey = req.params.action as ActuatorActionKey;
-        switch (action(actionKey)) {
-            case ActuatorAction.OFF:
-                return allOff();
-            case ActuatorAction.ON:
-                return allOn();
-            case ActuatorAction.TOGGLE:
-                return allToggle();
-            default:
-                console.log(`unknown action: ${actionKey}`)
-                return '';
-        }
-    });
+function handle(message: any) {
+  if ('action' in message) {
+    const { actuatorId, action } = message;
+    switch (action) {
+      case ActuatorAction.OFF:
+        return actuatorId ? off(actuatorId) : allOff();
+      case ActuatorAction.ON:
+        return actuatorId ? on(actuatorId) : allOn();
+      case ActuatorAction.TOGGLE:
+        return actuatorId ? toggle(actuatorId) : allToggle();
+      default:
+        console.log(`unknown action: ${message}`);
+    }
+  }
+  return undefined;
+}
 
+export function newWebSocketClient(ws: WebSocket) {
+  console.log('new websocket client');
+  sockets.push(ws);
 
-api.route('/actuators/:id/:action')
-    .put((req, res) => {
-        res.json({});
-        toggle(req.params.id);
-    });
+  getActuators().forEach((a) => {
+    send(a, ws);
+  });
 
+  getEvents().forEach((e) => {
+    send(e, ws);
+  });
 
-export default api;
+  readAll();
+
+  ws.on('message', (data) => {
+    console.log('api message:', data);
+    if (typeof data === 'string') {
+      try {
+        handle(JSON.parse(data));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  });
+}

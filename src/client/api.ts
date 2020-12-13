@@ -1,13 +1,51 @@
-import { Actuator, ActuatorAction, key } from '../shared/actuator';
+import { Actuator, ActuatorAction } from '../shared/actuator';
+import { ClientMessage, ServerMessage } from '../shared/api';
 
-export function getActuators() : Promise<Actuator[]> {
-  return fetch('/api/actuators').then((r) => r.json());
+type MessageHandler = (message: ServerMessage) => void
+
+const callbacks: MessageHandler[] = [];
+
+let ws : WebSocket;
+function connect() {
+  ws = new WebSocket(`ws://${window.location.host}/ws`);
+  ws.onmessage = (ev) => {
+    const message = JSON.parse(ev.data);
+    callbacks.forEach((m) => m(message));
+  };
+
+  ws.onclose = (e) => {
+    console.log(e);
+    setTimeout(() => {
+      connect();
+    }, 1000);
+  };
+
+  ws.onerror = (err) => {
+    console.error(err);
+    ws.close();
+  };
+}
+connect();
+
+export function onMessage(callback: MessageHandler) {
+  callbacks.push(callback);
 }
 
-export function allActuators(actuator: ActuatorAction) : Promise<any> {
-  return fetch(`/api/actuators/all/${key(actuator)}`, { method: 'PUT' });
+function sendMessage(message: ClientMessage) {
+  if (ws) {
+    ws.send(JSON.stringify(message));
+  }
 }
 
-export function toggle(actuator: Actuator) : Promise<any> {
-  return fetch(`/api/actuators/${actuator.id}/toggle`, { method: 'PUT' });
+export function allActuators(action: ActuatorAction) {
+  sendMessage({
+    action,
+  });
+}
+
+export function toggle(actuator: Actuator) {
+  sendMessage({
+    actuatorId: actuator.id,
+    action: ActuatorAction.TOGGLE,
+  });
 }
